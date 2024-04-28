@@ -11,3 +11,18 @@ pub struct Buffer {
 pub enum EditorMode {
     Command, Insert
 }
+
+#[derive(Debug, PartialEq)]
+pub enum Command {
+    Append,
+    List,
+    Quit,
+    Line(usize),
+    Noop,
+}
+
+pub trait EditorFn {
+    fn apply(&self, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError>;
+}
+
+pub struct CommandError;

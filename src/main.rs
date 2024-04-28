@@ -2,7 +2,7 @@ mod editor;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, Editor, EditorMode};
+use editor::{Buffer, Command, Editor, EditorMode};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let buffer = if let Some(path) = std::env::args().skip(1).next() {
@@ -53,15 +53,6 @@ fn read_content() -> Result<String, Box<dyn Error>> {
 
         last += chars_read;
     }
-}
-
-#[derive(Debug, PartialEq)]
-enum Command {
-    Append,
-    List,
-    Quit,
-    Line(usize),
-    Noop,
 }
 
 impl Command {
