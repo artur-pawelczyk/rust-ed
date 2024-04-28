@@ -1,8 +1,10 @@
 mod editor;
+mod commands;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, Command, Editor, EditorMode};
+use editor::{Buffer, Command, CommandError, Editor, EditorFn, EditorMode};
+use commands as cmds;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let buffer = if let Some(path) = std::env::args().skip(1).next() {
@@ -17,9 +19,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         if editor.mode == EditorMode::Command {
-            match read_command()? {
-                Command::List => println!("{}", editor.buffer.contents),
-                Command::Append => editor.mode = EditorMode::Insert,
+            let cmd = read_command()?;
+            match cmd {
+                Command::List => {
+                    run_command(&cmds::list, &mut editor, &cmd)?
+                },
+                Command::Append => run_command(&cmds::append, &mut editor, &cmd)?,
                 Command::Line(_) => todo!(),
                 Command::Quit => return Ok(()),
                 Command::Noop => {},
@@ -30,6 +35,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             editor.mode = EditorMode::Command;
         }
     }
+}
+
+fn run_command<F>(f: &impl EditorFn<F>, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError> {
+    f.apply(ed, cmd)
 }
 
 fn read_command() -> Result<Command, Box<dyn Error>> {
