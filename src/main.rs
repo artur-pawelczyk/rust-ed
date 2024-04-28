@@ -1,11 +1,11 @@
+mod editor;
+
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-struct Buffer {
-    contents: String,
-}
+use editor::{Buffer, Editor, EditorMode};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut buffer = if let Some(path) = std::env::args().skip(1).next() {
+    let buffer = if let Some(path) = std::env::args().skip(1).next() {
         let mut contents = String::new();
         File::open(path)?.read_to_string(&mut contents)?;
         Buffer { contents }
@@ -13,43 +13,73 @@ fn main() -> Result<(), Box<dyn Error>> {
         Buffer { contents: String::new() }
     };
 
-    let mut input = String::new();
-    while read_command(&mut input).is_ok() {
-        match Command::parse(&input)? {
-            Command::List => println!("{}", buffer.contents),
-            Command::Append(s) => buffer.contents.push_str(s),
+    let mut editor = Editor { buffer, mode: EditorMode::Command };
+
+    loop {
+        if editor.mode == EditorMode::Command {
+            match read_command()? {
+                Command::List => println!("{}", editor.buffer.contents),
+                Command::Append => editor.mode = EditorMode::Insert,
+                Command::Line(_) => todo!(),
+                Command::Quit => return Ok(()),
+                Command::Noop => {},
+            }
+        } else if editor.mode == EditorMode::Insert {
+            let new_content = read_content()?;
+            editor.buffer.contents.push_str(&new_content);
+            editor.mode = EditorMode::Command;
         }
-
-        input.clear();
     }
-
-    Ok(())
 }
 
-fn read_command(buf: &mut String) -> Result<(), Box<dyn Error>> {
+fn read_command() -> Result<Command, Box<dyn Error>> {
     let mut out = std::io::stdout();
     write!(out, "> ")?;
     out.flush()?;
-    std::io::stdin().read_line(buf)?;
-    Ok(())
+    let mut buf = String::new();
+    std::io::stdin().read_line(&mut buf)?;
+    Command::parse(&buf).map_err(|err| Box::new(err) as Box<dyn Error>)
+}
+
+fn read_content() -> Result<String, Box<dyn Error>> {
+    let mut buf = String::new();
+    let mut last: usize = 0;
+    loop {
+        let chars_read = std::io::stdin().read_line(&mut buf)?;
+        if buf[last..last+chars_read].trim_end() == "." {
+            buf.truncate(last);
+            return Ok(buf);
+        }
+
+        last += chars_read;
+    }
 }
 
 #[derive(Debug, PartialEq)]
-enum Command<'a> {
-    Append(&'a str),
+enum Command {
+    Append,
     List,
+    Quit,
+    Line(usize),
+    Noop,
 }
 
-impl<'a> Command<'a> {
-    fn parse(s: &'a str) -> Result<Self, CommandParseError> {
-        match &s[0..1] {
-            "l" => Ok(Command::List),
-            "a" => {
-                let new_content = &s[2..];
-                let new_content = new_content.strip_suffix('\n').unwrap_or(new_content);
-                Ok(Command::Append(new_content))
-            },
-            _ => Err(CommandParseError),
+impl Command {
+    fn parse(s: &str) -> Result<Self, CommandParseError> {
+        let cmd = s.split_ascii_whitespace().next().unwrap_or("");
+        if cmd.is_empty() {
+            return Ok(Self::Noop);
+        }
+
+        if let Ok(line_number) = cmd.parse::<usize>() {
+            Ok(Self::Line(line_number))
+        } else {
+            match cmd {
+                "l" => Ok(Command::List),
+                "a" => Ok(Command::Append),
+                "q" => Ok(Command::Quit),
+                _ => Err(CommandParseError),
+            }
         }
     }        
 }
@@ -71,23 +101,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_list_command() -> Result<(), Box<dyn Error>> {
+    fn parse_command() -> Result<(), Box<dyn Error>> {
         let s = "l";
         let command = Command::parse(&s)?;
         assert_eq!(command, Command::List);
 
-        Ok(())
-    }
-
-    #[test]
-    fn parse_append_command() -> Result<(), Box<dyn Error>> {
-        let s = "a something";
+        let s = "a";
         let command = Command::parse(&s)?;
-        assert_eq!(command, Command::Append("something"));
+        assert_eq!(command, Command::Append);
 
-        let s = "a with newline\n";
+        let s = "12";
         let command = Command::parse(&s)?;
-        assert_eq!(command, Command::Append("with newline"));
+        assert_eq!(command, Command::Line(12));
 
         Ok(())
     }
