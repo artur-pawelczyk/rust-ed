@@ -15,7 +15,7 @@ pub enum EditorMode {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Command {
+pub enum CommandEnum {
     Append,
     List,
     Quit,
@@ -24,13 +24,13 @@ pub enum Command {
 }
 
 pub trait EditorFn<T> {
-    fn apply(&self, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError>;
+    fn apply(&self, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError>;
 }
 
-impl<F> EditorFn<&Command> for F
-where F: Fn(&mut Editor, &Command) -> Result<(), CommandError>
+impl<F> EditorFn<&CommandEnum> for F
+where F: Fn(&mut Editor, &CommandEnum) -> Result<(), CommandError>
 {
-    fn apply(&self, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError> {
+    fn apply(&self, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError> {
         self(ed, cmd)
     }
 }
@@ -38,7 +38,7 @@ where F: Fn(&mut Editor, &Command) -> Result<(), CommandError>
 impl<F> EditorFn<()> for F
 where F: Fn(&mut Editor) -> Result<(), CommandError>
 {
-    fn apply(&self, ed: &mut Editor, _: &Command) -> Result<(), CommandError> {
+    fn apply(&self, ed: &mut Editor, _: &CommandEnum) -> Result<(), CommandError> {
         self(ed)
     }
 }
@@ -46,9 +46,9 @@ where F: Fn(&mut Editor) -> Result<(), CommandError>
 impl<F> EditorFn<usize> for F
 where F: Fn(&mut Editor, usize) -> Result<(), CommandError>
 {
-    fn apply(&self, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError> {
+    fn apply(&self, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError> {
         match cmd {
-            Command::Line(n) => self(ed, *n),
+            CommandEnum::Line(n) => self(ed, *n),
             _ => Err(CommandError)
         }
     }

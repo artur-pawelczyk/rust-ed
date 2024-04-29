@@ -4,7 +4,7 @@ mod map;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, Command, CommandError, Editor, EditorFn, EditorMode};
+use editor::{Buffer, CommandEnum, CommandError, Editor, EditorFn, EditorMode};
 use commands as cmds;
 use map::CommandMap;
 
@@ -20,9 +20,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut editor = Editor { buffer, mode: EditorMode::Command };
 
     let mut cmd_map = CommandMap::default();
-    cmd_map.bind("a", Command::Append);
-    cmd_map.bind("l", Command::List);
-    cmd_map.bind("q", Command::Quit);
+    cmd_map.bind("a", CommandEnum::Append);
+    cmd_map.bind("l", CommandEnum::List);
+    cmd_map.bind("q", CommandEnum::Quit);
 
     loop {
         if editor.mode == EditorMode::Command {
@@ -31,13 +31,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             })??;
 
             match cmd {
-                Command::List => {
+                CommandEnum::List => {
                     run_command(&cmds::list, &mut editor, &cmd)?
                 },
-                Command::Append => run_command(&cmds::append, &mut editor, &cmd)?,
-                Command::Line(_) => run_command(&cmds::goto_line, &mut editor, &cmd)?,
-                Command::Quit => run_command(&cmds::quit, &mut editor, &cmd)?,
-                Command::Noop => run_command(&cmds::noop, &mut editor, &cmd)?,
+                CommandEnum::Append => run_command(&cmds::append, &mut editor, &cmd)?,
+                CommandEnum::Line(_) => run_command(&cmds::goto_line, &mut editor, &cmd)?,
+                CommandEnum::Quit => run_command(&cmds::quit, &mut editor, &cmd)?,
+                CommandEnum::Noop => run_command(&cmds::noop, &mut editor, &cmd)?,
             }
         } else if editor.mode == EditorMode::Insert {
             let new_content = read_content()?;
@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn run_command<F>(f: &impl EditorFn<F>, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError> {
+fn run_command<F>(f: &impl EditorFn<F>, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError> {
     f.apply(ed, cmd)
 }
 
@@ -74,7 +74,7 @@ fn read_content() -> Result<String, Box<dyn Error>> {
     }
 }
 
-impl Command {
+impl CommandEnum {
     fn parse(s: &str) -> Result<Self, CommandParseError> {
         let cmd = s.split_ascii_whitespace().next().unwrap_or("");
         if cmd.is_empty() {
@@ -85,9 +85,9 @@ impl Command {
             Ok(Self::Line(line_number))
         } else {
             match cmd {
-                "l" => Ok(Command::List),
-                "a" => Ok(Command::Append),
-                "q" => Ok(Command::Quit),
+                "l" => Ok(CommandEnum::List),
+                "a" => Ok(CommandEnum::Append),
+                "q" => Ok(CommandEnum::Quit),
                 _ => Err(CommandParseError),
             }
         }
@@ -113,16 +113,16 @@ mod tests {
     #[test]
     fn parse_command() -> Result<(), Box<dyn Error>> {
         let s = "l";
-        let command = Command::parse(&s)?;
-        assert_eq!(command, Command::List);
+        let command = CommandEnum::parse(&s)?;
+        assert_eq!(command, CommandEnum::List);
 
         let s = "a";
-        let command = Command::parse(&s)?;
-        assert_eq!(command, Command::Append);
+        let command = CommandEnum::parse(&s)?;
+        assert_eq!(command, CommandEnum::Append);
 
         let s = "12";
-        let command = Command::parse(&s)?;
-        assert_eq!(command, Command::Line(12));
+        let command = CommandEnum::parse(&s)?;
+        assert_eq!(command, CommandEnum::Line(12));
 
         Ok(())
     }

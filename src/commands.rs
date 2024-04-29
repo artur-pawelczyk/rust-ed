@@ -1,6 +1,6 @@
-use crate::editor::{Command, CommandError, Editor, EditorMode};
+use crate::editor::{CommandEnum, CommandError, Editor, EditorMode};
 
-pub fn list(ed: &mut Editor, _: &Command) -> Result<(), CommandError> {
+pub fn list(ed: &mut Editor, _: &CommandEnum) -> Result<(), CommandError> {
     println!("{}", ed.buffer.contents);
     Ok(())
 }
