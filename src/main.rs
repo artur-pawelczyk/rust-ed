@@ -6,6 +6,7 @@ use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
 use editor::{Buffer, Command, CommandError, Editor, EditorFn, EditorMode};
 use commands as cmds;
+use map::CommandMap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let buffer = if let Some(path) = std::env::args().skip(1).next() {
@@ -18,9 +19,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut editor = Editor { buffer, mode: EditorMode::Command };
 
+    let mut cmd_map = CommandMap::default();
+    cmd_map.bind("a", Command::Append);
+    cmd_map.bind("l", Command::List);
+    cmd_map.bind("q", Command::Quit);
+
     loop {
         if editor.mode == EditorMode::Command {
-            let cmd = read_command()?;
+            let cmd = read_command().and_then(|cmd| {
+                Ok(cmd_map.lookup(&cmd).ok_or_else(|| Box::new(CommandParseError)))
+            })??;
+
             match cmd {
                 Command::List => {
                     run_command(&cmds::list, &mut editor, &cmd)?
@@ -42,13 +51,13 @@ fn run_command<F>(f: &impl EditorFn<F>, ed: &mut Editor, cmd: &Command) -> Resul
     f.apply(ed, cmd)
 }
 
-fn read_command() -> Result<Command, Box<dyn Error>> {
+fn read_command() -> Result<String, Box<dyn Error>> {
     let mut out = std::io::stdout();
     write!(out, "> ")?;
     out.flush()?;
     let mut buf = String::new();
     std::io::stdin().read_line(&mut buf)?;
-    Command::parse(&buf).map_err(|err| Box::new(err) as Box<dyn Error>)
+    Ok(buf)
 }
 
 fn read_content() -> Result<String, Box<dyn Error>> {

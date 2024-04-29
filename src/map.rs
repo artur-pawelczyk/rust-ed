@@ -9,7 +9,9 @@ pub struct CommandMap {
 
 impl CommandMap {
     pub fn lookup(&self, s: &str) -> Option<Command> {
-        if let Ok(n) = s.parse::<usize>() {
+        if s.trim().is_empty() {
+            Some(Command::Noop)
+        } else if let Ok(n) = s.parse::<usize>() {
             Some(Command::Line(n))
         } else {
             s.chars().next().and_then(|c| self.map.get(&c)).map(|c| *c)
@@ -39,5 +41,12 @@ mod tests {
         let map = CommandMap::default();
         let cmd = map.lookup("123").unwrap();
         assert_eq!(cmd, Command::Line(123));
+    }
+
+    #[test]
+    fn test_noop_command() {
+        let map = CommandMap::default();
+        let cmd = map.lookup("").unwrap();
+        assert_eq!(cmd, Command::Noop);
     }
 }
