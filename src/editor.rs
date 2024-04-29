@@ -14,7 +14,7 @@ pub enum EditorMode {
     Command, Insert
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Command {
     Append,
     List,

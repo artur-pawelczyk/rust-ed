@@ -1,5 +1,6 @@
 mod editor;
 mod commands;
+mod map;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
