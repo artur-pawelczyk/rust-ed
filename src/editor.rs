@@ -11,7 +11,7 @@ pub struct Buffer {
 
 #[derive(PartialEq)]
 pub enum EditorMode {
-    Command, Insert
+    Command, Insert, Quit
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -44,7 +44,7 @@ where F: Fn(&mut Editor) -> Result<(), CommandError>
 }
 
 impl<F> EditorFn<usize> for F
-where F: Fn(&Editor, usize) -> Result<(), CommandError>
+where F: Fn(&mut Editor, usize) -> Result<(), CommandError>
 {
     fn apply(&self, ed: &mut Editor, cmd: &Command) -> Result<(), CommandError> {
         match cmd {

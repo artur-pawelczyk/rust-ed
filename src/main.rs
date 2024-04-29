@@ -35,9 +35,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     run_command(&cmds::list, &mut editor, &cmd)?
                 },
                 Command::Append => run_command(&cmds::append, &mut editor, &cmd)?,
-                Command::Line(_) => todo!(),
-                Command::Quit => return Ok(()),
-                Command::Noop => {},
+                Command::Line(_) => run_command(&cmds::goto_line, &mut editor, &cmd)?,
+                Command::Quit => run_command(&cmds::quit, &mut editor, &cmd)?,
+                Command::Noop => run_command(&cmds::noop, &mut editor, &cmd)?,
             }
         } else if editor.mode == EditorMode::Insert {
             let new_content = read_content()?;
