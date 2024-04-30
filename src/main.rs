@@ -4,7 +4,7 @@ mod map;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, CommandEnum, CommandError, Editor, EditorFn, EditorMode};
+use editor::{Buffer, CommandContext, CommandEnum, CommandError, Editor, EditorFn, EditorMode};
 use commands as cmds;
 use map::CommandMap;
 
@@ -32,12 +32,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             match cmd {
                 CommandEnum::List => {
-                    run_command(&cmds::list, &mut editor, &cmd)?
+                    run_command(&cmds::list, &mut editor)?
                 },
-                CommandEnum::Append => run_command(&cmds::append, &mut editor, &cmd)?,
-                CommandEnum::Line(_) => run_command(&cmds::goto_line, &mut editor, &cmd)?,
-                CommandEnum::Quit => run_command(&cmds::quit, &mut editor, &cmd)?,
-                CommandEnum::Noop => run_command(&cmds::noop, &mut editor, &cmd)?,
+                CommandEnum::Append => run_command(&cmds::append, &mut editor)?,
+                CommandEnum::Line(_) => run_command(&cmds::goto_line, &mut editor)?,
+                CommandEnum::Quit => run_command(&cmds::quit, &mut editor)?,
+                CommandEnum::Noop => run_command(&cmds::noop, &mut editor)?,
             }
         } else if editor.mode == EditorMode::Insert {
             let new_content = read_content()?;
@@ -47,8 +47,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
-fn run_command<F>(f: &impl EditorFn<F>, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError> {
-    f.apply(ed, cmd)
+fn run_command(f: &impl EditorFn, ed: &mut Editor) -> Result<(), CommandError> {
+    f.apply(ed, &CommandContext)
 }
 
 fn read_command() -> Result<String, Box<dyn Error>> {

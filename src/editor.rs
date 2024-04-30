@@ -23,34 +23,23 @@ pub enum CommandEnum {
     Noop,
 }
 
-pub trait EditorFn<T> {
-    fn apply(&self, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError>;
-}
+pub struct CommandContext;
 
-impl<F> EditorFn<&CommandEnum> for F
-where F: Fn(&mut Editor, &CommandEnum) -> Result<(), CommandError>
-{
-    fn apply(&self, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError> {
-        self(ed, cmd)
+impl CommandContext {
+    pub fn line(&self) -> usize {
+        1
     }
 }
 
-impl<F> EditorFn<()> for F
-where F: Fn(&mut Editor) -> Result<(), CommandError>
-{
-    fn apply(&self, ed: &mut Editor, _: &CommandEnum) -> Result<(), CommandError> {
-        self(ed)
-    }
+pub trait EditorFn {
+    fn apply(&self, ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError>;
 }
 
-impl<F> EditorFn<usize> for F
-where F: Fn(&mut Editor, usize) -> Result<(), CommandError>
+impl<F> EditorFn for F
+where F: Fn(&mut Editor, &CommandContext) -> Result<(), CommandError>
 {
-    fn apply(&self, ed: &mut Editor, cmd: &CommandEnum) -> Result<(), CommandError> {
-        match cmd {
-            CommandEnum::Line(n) => self(ed, *n),
-            _ => Err(CommandError)
-        }
+    fn apply(&self, ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError> {
+        self(ed, ctx)
     }
 }
 
