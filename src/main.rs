@@ -4,7 +4,7 @@ mod map;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, CommandContext, CommandEnum, CommandError, Editor, EditorFn, EditorMode};
+use editor::{Buffer, CommandEnum, Editor, EditorMode};
 use commands as cmds;
 use map::CommandMap;
 
@@ -20,9 +20,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut editor = Editor { buffer, mode: EditorMode::Command };
 
     let mut cmd_map = CommandMap::default();
-    cmd_map.bind("a", CommandEnum::Append);
-    cmd_map.bind("l", CommandEnum::List);
-    cmd_map.bind("q", CommandEnum::Quit);
+    cmd_map.bind("a", "append", cmds::append);
+    cmd_map.bind("l", "list", cmds::list);
+    cmd_map.bind("q", "quit", cmds::quit);
+    cmd_map.bind_number("goto-line", cmds::goto_line);
 
     loop {
         if editor.mode == EditorMode::Command {
@@ -30,25 +31,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 Ok(cmd_map.lookup(&cmd).ok_or_else(|| Box::new(CommandParseError)))
             })??;
 
-            match cmd {
-                CommandEnum::List => {
-                    run_command(&cmds::list, &mut editor)?
-                },
-                CommandEnum::Append => run_command(&cmds::append, &mut editor)?,
-                CommandEnum::Line(_) => run_command(&cmds::goto_line, &mut editor)?,
-                CommandEnum::Quit => run_command(&cmds::quit, &mut editor)?,
-                CommandEnum::Noop => run_command(&cmds::noop, &mut editor)?,
-            }
+            cmd.run(&mut editor)?;
         } else if editor.mode == EditorMode::Insert {
             let new_content = read_content()?;
             editor.buffer.contents.push_str(&new_content);
             editor.mode = EditorMode::Command;
         }
     }
-}
-
-fn run_command(f: &impl EditorFn, ed: &mut Editor) -> Result<(), CommandError> {
-    f.apply(ed, &CommandContext)
 }
 
 fn read_command() -> Result<String, Box<dyn Error>> {
