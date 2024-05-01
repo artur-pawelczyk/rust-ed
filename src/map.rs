@@ -31,7 +31,7 @@ impl Default for Command {
 
 impl Command {
     pub fn run(&self, ed: &mut Editor) -> Result<(), CommandError> {
-        self.f.apply(ed, &CommandContext)
+        self.f.apply(ed, &CommandContext::default())
     }
 }
 

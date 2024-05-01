@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Buffer { contents: String::new() }
     };
 
-    let mut editor = Editor { buffer, mode: EditorMode::Command };
+    let mut editor = Editor { buffer, mode: EditorMode::Command, line: 1 };
 
     let mut cmd_map = CommandMap::default();
     cmd_map.bind("a", "append", cmds::append);

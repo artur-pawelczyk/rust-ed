@@ -10,8 +10,8 @@ pub fn append(ed: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
     Ok(())
 }
 
-pub fn goto_line(_: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError> {
-    println!("go to line {}", ctx.line());
+pub fn goto_line(ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError> {
+    ed.line = ctx.line();
     Ok(())
 }
 
@@ -22,4 +22,19 @@ pub fn quit(ed: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
 
 pub fn noop(_: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_goto_line() {
+        let mut ed = Editor::default();
+        let ctx = CommandContext(123);
+
+        goto_line(&mut ed, &ctx).unwrap();
+
+        assert_eq!(ed.line, 123);
+    }
 }

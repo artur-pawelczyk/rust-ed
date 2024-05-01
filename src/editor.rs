@@ -3,15 +3,27 @@ use std::{error::Error, fmt::Display};
 pub struct Editor {
     pub buffer: Buffer,
     pub mode: EditorMode,
+    pub line: usize,
 }
 
+impl Default for Editor {
+    fn default() -> Self {
+        Self {
+            buffer: Default::default(),
+            mode: Default::default(),
+            line: 1
+        }
+    }
+}
+
+#[derive(Default)]
 pub struct Buffer {
     pub contents: String,
 }
 
-#[derive(PartialEq)]
+#[derive(Default, PartialEq)]
 pub enum EditorMode {
-    Command, Insert, Quit
+    #[default] Command, Insert, Quit
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -23,11 +35,17 @@ pub enum CommandEnum {
     Noop,
 }
 
-pub struct CommandContext;
+pub struct CommandContext(pub usize);
+
+impl Default for CommandContext {
+    fn default() -> Self {
+        Self(1)
+    }
+}
 
 impl CommandContext {
     pub fn line(&self) -> usize {
-        1
+        self.0
     }
 }
 
