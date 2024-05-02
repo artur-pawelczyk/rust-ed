@@ -4,7 +4,7 @@ mod map;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, CommandEnum, Editor, EditorMode};
+use editor::{Buffer, Editor, EditorMode};
 use commands as cmds;
 use map::CommandMap;
 
@@ -63,26 +63,6 @@ fn read_content() -> Result<String, Box<dyn Error>> {
     }
 }
 
-impl CommandEnum {
-    fn parse(s: &str) -> Result<Self, CommandParseError> {
-        let cmd = s.split_ascii_whitespace().next().unwrap_or("");
-        if cmd.is_empty() {
-            return Ok(Self::Noop);
-        }
-
-        if let Ok(line_number) = cmd.parse::<usize>() {
-            Ok(Self::Line(line_number))
-        } else {
-            match cmd {
-                "l" => Ok(CommandEnum::List),
-                "a" => Ok(CommandEnum::Append),
-                "q" => Ok(CommandEnum::Quit),
-                _ => Err(CommandParseError),
-            }
-        }
-    }        
-}
-
 #[derive(Debug)]
 struct CommandParseError;
 
@@ -92,27 +72,5 @@ impl Error for CommandParseError {
 impl Display for CommandParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "command parse error")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parse_command() -> Result<(), Box<dyn Error>> {
-        let s = "l";
-        let command = CommandEnum::parse(&s)?;
-        assert_eq!(command, CommandEnum::List);
-
-        let s = "a";
-        let command = CommandEnum::parse(&s)?;
-        assert_eq!(command, CommandEnum::Append);
-
-        let s = "12";
-        let command = CommandEnum::parse(&s)?;
-        assert_eq!(command, CommandEnum::Line(12));
-
-        Ok(())
     }
 }

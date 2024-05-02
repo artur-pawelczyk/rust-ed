@@ -26,15 +26,6 @@ pub enum EditorMode {
     #[default] Command, Insert, Quit
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum CommandEnum {
-    Append,
-    List,
-    Quit,
-    Line(usize),
-    Noop,
-}
-
 pub struct CommandContext(pub usize);
 
 impl Default for CommandContext {
