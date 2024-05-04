@@ -11,7 +11,7 @@ pub fn append(ed: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
 }
 
 pub fn goto_line(ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError> {
-    ed.line = ctx.line();
+    ed.line = ctx.line;
     Ok(())
 }
 
@@ -31,7 +31,7 @@ mod tests {
     #[test]
     fn test_goto_line() {
         let mut ed = Editor::default();
-        let ctx = CommandContext { line: 123 };
+        let ctx = CommandContext::default().line(123);
 
         goto_line(&mut ed, &ctx).unwrap();
 

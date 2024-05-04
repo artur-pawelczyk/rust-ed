@@ -39,8 +39,11 @@ impl Default for CommandContext {
 }
 
 impl CommandContext {
-    pub fn line(&self) -> usize {
-        self.line
+    pub fn line(self, line: usize) -> Self {
+        Self {
+            line,
+            ..self
+        }
     }
 }
 
