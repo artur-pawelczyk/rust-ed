@@ -1,39 +1,55 @@
 use crate::editor::{CommandContext, CommandError, Editor, EditorMode};
 
-pub fn list(ed: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
-    println!("{}", ed.buffer.contents);
+pub fn list(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
+    writeln!(ctx.output, "{}", ed.buffer.contents)?;
     Ok(())
 }
 
-pub fn append(ed: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
+pub fn append(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
     ed.mode = EditorMode::Insert;
     Ok(())
 }
 
-pub fn goto_line(ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError> {
+pub fn goto_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
     ed.line = ctx.line;
     Ok(())
 }
 
-pub fn quit(ed: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
+pub fn quit(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
     ed.mode = EditorMode::Quit;
     Ok(())
 }
 
-pub fn noop(_: &mut Editor, _: &CommandContext) -> Result<(), CommandError> {
+pub fn noop(_: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::io::BufWriter;
+
     use super::*;
+
+    #[test]
+    fn test_list() {
+        let mut ed = Editor::default();
+        let mut buf = BufWriter::new(Vec::new());
+        let mut ctx = CommandContext::with_output(&mut buf);
+
+        ed.buffer.contents.push_str("the content");
+        list(&mut ed, &mut ctx).unwrap();
+
+        let output = buf.into_inner().unwrap();
+        assert_eq!(output, b"the content\n");
+    }
 
     #[test]
     fn test_goto_line() {
         let mut ed = Editor::default();
-        let ctx = CommandContext::default().line(123);
+        let mut out = std::io::stdout();
+        let mut ctx = CommandContext::with_output(&mut out).line(123);
 
-        goto_line(&mut ed, &ctx).unwrap();
+        goto_line(&mut ed, &mut ctx).unwrap();
 
         assert_eq!(ed.line, 123);
     }

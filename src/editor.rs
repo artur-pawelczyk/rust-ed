@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display};
+use std::{error::Error, fmt::Display, io::Write};
 
 pub struct Editor {
     pub buffer: Buffer,
@@ -26,19 +26,19 @@ pub enum EditorMode {
     #[default] Command, Insert, Quit
 }
 
-pub struct CommandContext {
-    pub line: usize
+pub struct CommandContext<'a> {
+    pub line: usize,
+    pub output: &'a mut dyn Write,
 }
 
-impl Default for CommandContext {
-    fn default() -> Self {
+impl<'a> CommandContext<'a> {
+    pub fn with_output<W: Write>(output: &'a mut W) -> Self {
         Self {
+            output,
             line: 1
         }
     }
-}
 
-impl CommandContext {
     pub fn line(self, line: usize) -> Self {
         Self {
             line,
@@ -48,21 +48,30 @@ impl CommandContext {
 }
 
 pub trait EditorFn {
-    fn apply(&self, ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError>;
+    fn apply(&self, ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError>;
 }
 
 impl<F> EditorFn for F
-where F: Fn(&mut Editor, &CommandContext) -> Result<(), CommandError>
+where F: Fn(&mut Editor, &mut CommandContext) -> Result<(), CommandError>
 {
-    fn apply(&self, ed: &mut Editor, ctx: &CommandContext) -> Result<(), CommandError> {
+    fn apply(&self, ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
         self(ed, ctx)
     }
 }
 
 #[derive(Debug)]
-pub struct CommandError;
+pub enum CommandError {
+    IOError(std::io::Error),
+    Generic,
+}
 
 impl Error for CommandError {
+}
+
+impl From<std::io::Error> for CommandError {
+    fn from(err: std::io::Error) -> Self {
+        Self::IOError(err)
+    }
 }
 
 impl Display for CommandError {

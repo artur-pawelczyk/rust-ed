@@ -31,7 +31,8 @@ impl Default for Command {
 
 impl Command {
     pub fn run(&self, ed: &mut Editor) -> Result<(), CommandError> {
-        self.f.apply(ed, &CommandContext::default())
+        let mut out = std::io::stdout();
+        self.f.apply(ed, &mut CommandContext::with_output(&mut out))
     }
 }
 
