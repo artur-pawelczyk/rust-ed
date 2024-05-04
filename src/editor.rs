@@ -26,17 +26,21 @@ pub enum EditorMode {
     #[default] Command, Insert, Quit
 }
 
-pub struct CommandContext(pub usize);
+pub struct CommandContext {
+    pub line: usize
+}
 
 impl Default for CommandContext {
     fn default() -> Self {
-        Self(1)
+        Self {
+            line: 1
+        }
     }
 }
 
 impl CommandContext {
     pub fn line(&self) -> usize {
-        self.0
+        self.line
     }
 }
 

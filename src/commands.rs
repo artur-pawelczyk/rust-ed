@@ -31,7 +31,7 @@ mod tests {
     #[test]
     fn test_goto_line() {
         let mut ed = Editor::default();
-        let ctx = CommandContext(123);
+        let ctx = CommandContext { line: 123 };
 
         goto_line(&mut ed, &ctx).unwrap();
 
