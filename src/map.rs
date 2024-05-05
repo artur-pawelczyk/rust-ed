@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::{Debug, Formatter}};
 
 use crate::{commands::noop, editor::{CommandContext, CommandError, Editor, EditorFn}};
 
 pub struct CommandMap {
-    map: HashMap<char, Command>,
-    number: Command,
-    noop: Command,
+    map: HashMap<char, InnerCommand>,
+    number: InnerCommand,
+    noop: InnerCommand,
 }
 
 impl Default for CommandMap {
@@ -13,49 +13,65 @@ impl Default for CommandMap {
         Self {
             map: Default::default(),
             number: Default::default(),
-            noop: Command { f: Box::new(noop), name: Box::from("noop") },
+            noop: InnerCommand { f: Box::new(noop), name: Box::from("noop") },
         }
     }
 }
 
-pub struct Command {
+struct InnerCommand {
     f: Box<dyn EditorFn>,
     name: Box<str>,
 }
 
-impl Default for Command {
+pub struct Command<'a> {
+    f: &'a dyn EditorFn,
+    name: &'a str,
+    line: usize,
+}
+
+impl Debug for Command<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "Command {{ name: {} line: {} }}", self.name, self.line)
+    }
+}
+
+impl Default for InnerCommand {
     fn default() -> Self {
         Self { f: Box::new(noop), name: Box::from("") }
     }
 }
 
-impl Command {
+impl Command<'_> {
     pub fn run(&self, ed: &mut Editor) -> Result<(), CommandError> {
         let mut out = std::io::stdout();
-        self.f.apply(ed, &mut CommandContext::with_output(&mut out))
+        let mut ctx = CommandContext::with_output(&mut out).line(self.line);
+        self.f.apply(ed, &mut ctx)
     }
 }
 
 impl CommandMap {
-    pub fn lookup(&self, s: &str) -> Option<&Command> {
+    pub fn lookup(&self, s: &str) -> Option<Command> {
         let s = s.trim();
         if s.is_empty() {
-            Some(&self.noop)
-        } else if let Ok(_) = s.parse::<usize>() {
-            Some(&self.number)
+            let cmd = &self.noop;
+            Some(Command { f: cmd.f.as_ref(), name: cmd.name.as_ref(), line: 1 })
+        } else if let Ok(line) = s.parse::<usize>() {
+            let cmd = &self.number;
+            Some(Command { f: cmd.f.as_ref(), name: cmd.name.as_ref(), line })
         } else {
-            s.chars().next().and_then(|c| self.map.get(&c))
+            let cmd = s.chars().next().and_then(|c| self.map.get(&c))?;
+            Some(Command { f: cmd.f.as_ref(), name: cmd.name.as_ref(), line: 1 })
         }
     }
 
     pub fn bind(&mut self, short: &str, name: &str, f: impl EditorFn + 'static) {
         if let Some(char) = short.chars().next() {
-            self.map.insert(char, Command{ f: Box::new(f), name: Box::from(name) });
+            self.map.insert(char, InnerCommand{ f: Box::new(f), name: Box::from(name) });
         }
     }
 
     pub fn bind_number(&mut self, name: &str, f: impl EditorFn + 'static) {
-        self.number = Command { name: Box::from(name), f: Box::new(f) };
+        self.number = InnerCommand { name: Box::from(name), f: Box::new(f) };
     }
 }
 
@@ -68,7 +84,7 @@ mod tests {
         let mut map = CommandMap::default();
         map.bind("a", "append", noop);
         let cmd = map.lookup("a").unwrap();
-        assert_eq!(cmd.name.as_ref(), "append");
+        assert_eq!(cmd.name, "append");
     }
 
     #[test]
@@ -76,14 +92,14 @@ mod tests {
         let mut map = CommandMap::default();
         map.bind_number("goto-line", noop);
         let cmd = map.lookup("123").unwrap();
-        assert_eq!(cmd.name.as_ref(), "goto-line");
+        assert_eq!(cmd.name, "goto-line");
     }
 
     #[test]
     fn test_noop_command() {
         let map = CommandMap::default();
         let cmd = map.lookup("").unwrap();
-        assert_eq!(cmd.name.as_ref(), "noop");
+        assert_eq!(cmd.name, "noop");
     }
 }
 

@@ -6,7 +6,7 @@ pub fn list(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandErro
 }
 
 pub fn print_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
-    if let Some(line) = ed.buffer.contents.lines().nth(ctx.line - 1) {
+    if let Some(line) = ed.buffer.contents.lines().nth(ed.line - 1) {
         writeln!(ctx.output, "{}", line)?;
         Ok(())
     } else {
@@ -56,13 +56,14 @@ mod tests {
     fn test_print_line() {
         let mut ed = Editor::default();
         let mut buf = BufWriter::new(Vec::new());
-        let mut ctx = CommandContext::with_output(&mut buf).line(1);
+        let mut ctx = CommandContext::with_output(&mut buf);
 
         ed.buffer.contents.push_str("first line\nsecond line");
+        ed.line = 2;
         print_line(&mut ed, &mut ctx).unwrap();
 
         let output = buf.into_inner().unwrap();
-        assert_eq!(output, b"first line\n");
+        assert_eq!(output, b"second line\n");
     }
 
     #[test]
