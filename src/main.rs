@@ -28,9 +28,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         if editor.mode == EditorMode::Command {
-            let cmd = read_command().and_then(|cmd| {
-                Ok(cmd_map.lookup(&cmd).ok_or_else(|| Box::new(CommandParseError)))
-            })??;
+            let cmd_str = read_command()?;
+            let cmd = cmd_map.lookup(&cmd_str).ok_or(CommandParseError::CommandNotFound)?;
 
             cmd.run(&mut editor)?;
         } else if editor.mode == EditorMode::Insert {
@@ -67,13 +66,17 @@ fn read_content() -> Result<String, Box<dyn Error>> {
 }
 
 #[derive(Debug)]
-struct CommandParseError;
+enum CommandParseError {
+    CommandNotFound,
+}
 
 impl Error for CommandParseError {
 }
 
 impl Display for CommandParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "command parse error")
+        match self {
+            Self::CommandNotFound => write!(f, "No such command"),
+        }
     }
 }

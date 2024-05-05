@@ -38,7 +38,8 @@ impl Command {
 
 impl CommandMap {
     pub fn lookup(&self, s: &str) -> Option<&Command> {
-        if s.trim().is_empty() {
+        let s = s.trim();
+        if s.is_empty() {
             Some(&self.noop)
         } else if let Ok(_) = s.parse::<usize>() {
             Some(&self.number)
