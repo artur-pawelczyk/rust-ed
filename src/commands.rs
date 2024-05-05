@@ -5,6 +5,15 @@ pub fn list(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandErro
     Ok(())
 }
 
+pub fn print_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
+    if let Some(line) = ed.buffer.contents.lines().nth(ctx.line - 1) {
+        writeln!(ctx.output, "{}", line)?;
+        Ok(())
+    } else {
+        Err(CommandError::Generic)
+    }
+}
+
 pub fn append(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
     ed.mode = EditorMode::Insert;
     Ok(())
@@ -41,6 +50,19 @@ mod tests {
 
         let output = buf.into_inner().unwrap();
         assert_eq!(output, b"the content\n");
+    }
+
+    #[test]
+    fn test_print_line() {
+        let mut ed = Editor::default();
+        let mut buf = BufWriter::new(Vec::new());
+        let mut ctx = CommandContext::with_output(&mut buf).line(1);
+
+        ed.buffer.contents.push_str("first line\nsecond line");
+        print_line(&mut ed, &mut ctx).unwrap();
+
+        let output = buf.into_inner().unwrap();
+        assert_eq!(output, b"first line\n");
     }
 
     #[test]

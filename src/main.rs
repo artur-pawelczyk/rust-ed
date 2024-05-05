@@ -22,6 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut cmd_map = CommandMap::default();
     cmd_map.bind("a", "append", cmds::append);
     cmd_map.bind("l", "list", cmds::list);
+    cmd_map.bind("p", "print-line", cmds::print_line);
     cmd_map.bind("q", "quit", cmds::quit);
     cmd_map.bind_number("goto-line", cmds::goto_line);
 
@@ -36,6 +37,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             let new_content = read_content()?;
             editor.buffer.contents.push_str(&new_content);
             editor.mode = EditorMode::Command;
+        } else if editor.mode == EditorMode::Quit {
+            return Ok(());
         }
     }
 }
