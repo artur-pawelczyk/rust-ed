@@ -20,7 +20,7 @@ pub fn append(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandErro
 }
 
 pub fn goto_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
-    ed.line = ctx.line;
+    ed.line = ctx.destination.shift(ed.line);
     Ok(())
 }
 
@@ -70,10 +70,17 @@ mod tests {
     fn test_goto_line() {
         let mut ed = Editor::default();
         let mut out = std::io::stdout();
-        let mut ctx = CommandContext::with_output(&mut out).line(123);
 
+        let mut ctx = CommandContext::with_output(&mut out).line(100);
         goto_line(&mut ed, &mut ctx).unwrap();
+        assert_eq!(ed.line, 100);
 
-        assert_eq!(ed.line, 123);
+        let mut ctx = CommandContext::with_output(&mut out).line_relative(5);
+        goto_line(&mut ed, &mut ctx).unwrap();
+        assert_eq!(ed.line, 105);
+
+        let mut ctx = CommandContext::with_output(&mut out).line_relative(-200);
+        goto_line(&mut ed, &mut ctx).unwrap();
+        assert_eq!(ed.line, 1);
     }
 }

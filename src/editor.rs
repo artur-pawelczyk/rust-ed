@@ -27,7 +27,7 @@ pub enum EditorMode {
 }
 
 pub struct CommandContext<'a> {
-    pub line: usize,
+    pub destination: LineOffset,
     pub output: &'a mut dyn Write,
 }
 
@@ -35,14 +35,44 @@ impl<'a> CommandContext<'a> {
     pub fn with_output<W: Write>(output: &'a mut W) -> Self {
         Self {
             output,
-            line: 1
+            destination: LineOffset::default(),
         }
     }
 
     pub fn line(self, line: usize) -> Self {
         Self {
-            line,
+            destination: LineOffset::Absolute(line),
             ..self
+        }
+    }
+
+    pub fn line_relative(self, n: isize) -> Self {
+        Self {
+            destination: LineOffset::Relative(n),
+            ..self
+        }
+    }
+}
+
+pub enum LineOffset {
+    Relative(isize),
+    Absolute(usize),
+}
+
+impl Default for LineOffset {
+    fn default() -> Self {
+        Self::Relative(0)
+    }
+}
+
+impl LineOffset {
+    pub fn shift(&self, l: usize) -> usize {
+        match self {
+            Self::Absolute(i) => *i,
+            Self::Relative(i) => {
+                let x = l as isize + i;
+                x.try_into().unwrap_or(1)
+            }
         }
     }
 }
