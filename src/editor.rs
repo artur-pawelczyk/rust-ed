@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, io::Write};
+use std::{error::Error, fmt::Display, io::Write, str::FromStr};
 
 pub struct Editor {
     pub buffer: Buffer,
@@ -52,8 +52,16 @@ impl<'a> CommandContext<'a> {
             ..self
         }
     }
+
+    pub fn line_offset(self, o: &LineOffset) -> Self {
+        Self {
+            destination: *o,
+            ..self
+        }
+    }
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LineOffset {
     Relative(isize),
     Absolute(usize),
@@ -73,6 +81,35 @@ impl LineOffset {
                 let x = l as isize + i;
                 x.try_into().unwrap_or(1)
             }
+        }
+    }
+}
+
+impl FromStr for LineOffset {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let first = s.get(0..1).ok_or(())?;
+        if first == "+" {
+            if s[1..].is_empty() {
+                Ok(Self::Relative(1))
+            } else {
+                s[1..].parse::<isize>()
+                    .map(|i| Self::Relative(i))
+                    .map_err(|_| ())
+            }
+        } else if first == "-" {
+            if s[1..].is_empty() {
+                Ok(Self::Relative(-1))
+            } else {
+                s[1..].parse::<isize>()
+                    .map(|i| Self::Relative(-i))
+                    .map_err(|_| ())
+            }
+        } else {
+            s.parse::<usize>()
+                .map(|i| Self::Absolute(i))
+                .map_err(|_| ())
         }
     }
 }
@@ -107,5 +144,19 @@ impl From<std::io::Error> for CommandError {
 impl Display for CommandError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "command error")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_line_offset() {
+        assert_eq!("1".parse::<LineOffset>().unwrap(), LineOffset::Absolute(1));
+        assert_eq!("+".parse::<LineOffset>().unwrap(), LineOffset::Relative(1));
+        assert_eq!("+3".parse::<LineOffset>().unwrap(), LineOffset::Relative(3));
+        assert_eq!("-".parse::<LineOffset>().unwrap(), LineOffset::Relative(-1));
+        assert_eq!("-3".parse::<LineOffset>().unwrap(), LineOffset::Relative(-3));
     }
 }
