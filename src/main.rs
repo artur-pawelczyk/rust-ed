@@ -26,19 +26,31 @@ fn main() -> Result<(), Box<dyn Error>> {
     cmd_map.bind("q", "quit", cmds::quit);
     cmd_map.bind_number("goto-line", cmds::goto_line);
 
-    loop {
-        if editor.mode == EditorMode::Command {
+    while editor.mode != EditorMode::Quit {
+        if let Err(e) = run_cycle(&mut editor, &cmd_map) {
+            println!("{:?}", e);
+        }
+    }
+
+    Ok(())
+}
+
+fn run_cycle(editor: &mut Editor, cmd_map: &CommandMap) -> Result<(), Box<dyn Error>> {
+    match editor.mode {
+        EditorMode::Command => {
             let cmd_str = read_command()?;
             let cmd = cmd_map.lookup(&cmd_str).ok_or(CommandParseError::CommandNotFound)?;
 
-            cmd.run(&mut editor)?;
-        } else if editor.mode == EditorMode::Insert {
+            cmd.run(editor)?;
+            Ok(())
+        },
+        EditorMode::Insert => {
             let new_content = read_content()?;
             editor.buffer.contents.push_str(&new_content);
             editor.mode = EditorMode::Command;
-        } else if editor.mode == EditorMode::Quit {
-            return Ok(());
-        }
+            Ok(())
+        },
+        EditorMode::Quit => { return Ok(()); },
     }
 }
 
