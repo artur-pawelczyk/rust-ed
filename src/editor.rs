@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, io::Write, str::FromStr};
+use std::{error::Error, fmt::Display, io::{Read, Write}, str::FromStr, sync::Arc};
 
 pub struct Editor {
     pub buffer: Buffer,
@@ -29,13 +29,46 @@ pub enum EditorMode {
 pub struct CommandContext<'a> {
     pub destination: LineOffset,
     pub output: &'a mut dyn Write,
+    pub input: &'a dyn TextInput,
 }
+
+pub trait TextInput {
+    fn read(&self) -> Result<String, ()>;
+}
+
+struct EmptyInput;
+impl TextInput for EmptyInput {
+    fn read(&self) -> Result<String, ()> {
+        Ok(String::new())
+    }
+}
+
+struct StdTextInput;
+impl TextInput for StdTextInput {
+    fn read(&self) -> Result<String, ()> {
+        let mut buf = String::new();
+        let mut last: usize = 0;
+        loop {
+            let chars_read = std::io::stdin().read_line(&mut buf)
+                .map_err(|_| ())?;
+            if buf[last..last+chars_read].trim_end() == "." {
+                buf.truncate(last);
+                return Ok(buf);
+            }
+
+            last += chars_read;
+        }
+    }
+}
+
+static DEFAULT_INPUT: StdTextInput = StdTextInput;
 
 impl<'a> CommandContext<'a> {
     pub fn with_output<W: Write>(output: &'a mut W) -> Self {
         Self {
             output,
             destination: LineOffset::default(),
+            input: &DEFAULT_INPUT
         }
     }
 
@@ -65,8 +98,8 @@ impl<'a> CommandContext<'a> {
 pub enum LineOffset {
     Relative(isize),
     Absolute(usize),
-}
 
+}
 impl Default for LineOffset {
     fn default() -> Self {
         Self::Relative(0)
@@ -130,6 +163,7 @@ where F: Fn(&mut Editor, &mut CommandContext) -> Result<(), CommandError>
 pub enum CommandError {
     IOError(std::io::Error),
     Generic,
+    Read,
 }
 
 impl Error for CommandError {

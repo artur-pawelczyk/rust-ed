@@ -14,8 +14,9 @@ pub fn print_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), Comma
     }
 }
 
-pub fn append(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
-    ed.mode = EditorMode::Insert;
+pub fn append(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
+    let text = ctx.input.read().map_err(|_| CommandError::Read)?;
+    ed.buffer.contents.push_str(&text);
     Ok(())
 }
 
@@ -36,6 +37,8 @@ pub fn noop(_: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> 
 #[cfg(test)]
 mod tests {
     use std::io::BufWriter;
+
+    use crate::editor::TextInput;
 
     use super::*;
 
@@ -82,5 +85,25 @@ mod tests {
         let mut ctx = CommandContext::with_output(&mut out).line_relative(-200);
         goto_line(&mut ed, &mut ctx).unwrap();
         assert_eq!(ed.line, 1);
+    }
+
+    #[test]
+    fn test_append() {
+        let mut ed = Editor::default();
+        let mut out = std::io::sink();
+        let mut ctx = CommandContext::with_output(&mut out).line(2);
+
+        ed.buffer.contents.push_str("first\n");
+        ctx.input = &ConstInput("second\n");
+        append(&mut ed, &mut ctx).unwrap();
+
+        assert_eq!(ed.buffer.contents, "first\nsecond\n");
+    }
+
+    struct ConstInput(&'static str);
+    impl TextInput for ConstInput {
+        fn read(&self) -> Result<String, ()> {
+            Ok(String::from(self.0))
+        }
     }
 }
