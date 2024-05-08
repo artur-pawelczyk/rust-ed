@@ -20,6 +20,16 @@ pub fn append(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandEr
     Ok(())
 }
 
+pub fn change_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
+    let text = ctx.input.read().map_err(|_| CommandError::Read)?;
+    let target_line = ctx.destination.shift(ed.line);
+    let mut lines = ed.buffer.contents.char_indices().filter(|(_, c)| *c == '\n').skip(target_line - 2);
+    let start = lines.next().map(|(i, _)| i).ok_or(CommandError::Generic)? + 1;
+    let end = lines.next().map(|(i, _)| i).unwrap_or(ed.buffer.contents.len());
+    ed.buffer.contents.replace_range(start..end, text.trim_end());
+    Ok(())
+}
+
 pub fn goto_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
     ed.line = ctx.destination.shift(ed.line);
     Ok(())
@@ -91,13 +101,26 @@ mod tests {
     fn test_append() {
         let mut ed = Editor::default();
         let mut out = std::io::sink();
-        let mut ctx = CommandContext::with_output(&mut out).line(2);
+        let mut ctx = CommandContext::with_output(&mut out);
 
         ed.buffer.contents.push_str("first\n");
         ctx.input = &ConstInput("second\n");
         append(&mut ed, &mut ctx).unwrap();
 
         assert_eq!(ed.buffer.contents, "first\nsecond\n");
+    }
+
+    #[test]
+    fn test_change_line() {
+        let mut ed = Editor::default();
+        let mut out = std::io::sink();
+        let mut ctx = CommandContext::with_output(&mut out).line(2);
+
+        ed.buffer.contents.push_str("first\nsecond\nthird\n");
+        ctx.input = &ConstInput("changed\n");
+        change_line(&mut ed, &mut ctx).unwrap();
+
+        assert_eq!(ed.buffer.contents, "first\nchanged\nthird\n");
     }
 
     struct ConstInput(&'static str);

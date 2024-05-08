@@ -36,13 +36,6 @@ pub trait TextInput {
     fn read(&self) -> Result<String, ()>;
 }
 
-struct EmptyInput;
-impl TextInput for EmptyInput {
-    fn read(&self) -> Result<String, ()> {
-        Ok(String::new())
-    }
-}
-
 struct StdTextInput;
 impl TextInput for StdTextInput {
     fn read(&self) -> Result<String, ()> {
