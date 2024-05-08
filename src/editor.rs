@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, io::{Read, Write}, str::FromStr, sync::Arc};
+use std::{error::Error, fmt::Display, io::Write, str::FromStr};
 
 pub struct Editor {
     pub buffer: Buffer,
@@ -23,7 +23,7 @@ pub struct Buffer {
 
 #[derive(Default, PartialEq)]
 pub enum EditorMode {
-    #[default] Command, Insert, Quit
+    #[default] Command, Quit
 }
 
 pub struct CommandContext<'a> {

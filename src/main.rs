@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 mod editor;
 mod commands;
 mod map;
@@ -47,12 +44,6 @@ fn run_cycle(editor: &mut Editor, cmd_map: &CommandMap) -> Result<(), Box<dyn Er
             cmd.run(editor)?;
             Ok(())
         },
-        EditorMode::Insert => {
-            let new_content = read_content()?;
-            editor.buffer.contents.push_str(&new_content);
-            editor.mode = EditorMode::Command;
-            Ok(())
-        },
         EditorMode::Quit => { return Ok(()); },
     }
 }
@@ -64,20 +55,6 @@ fn read_command() -> Result<String, Box<dyn Error>> {
     let mut buf = String::new();
     std::io::stdin().read_line(&mut buf)?;
     Ok(buf)
-}
-
-fn read_content() -> Result<String, Box<dyn Error>> {
-    let mut buf = String::new();
-    let mut last: usize = 0;
-    loop {
-        let chars_read = std::io::stdin().read_line(&mut buf)?;
-        if buf[last..last+chars_read].trim_end() == "." {
-            buf.truncate(last);
-            return Ok(buf);
-        }
-
-        last += chars_read;
-    }
 }
 
 #[derive(Debug)]
