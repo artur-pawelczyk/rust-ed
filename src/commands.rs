@@ -1,7 +1,9 @@
 use crate::editor::{CommandContext, CommandError, Editor, EditorMode};
 
 pub fn list(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
-    writeln!(ctx.output, "{}", ed.buffer.contents)?;
+    for (n, line) in ed.buffer.contents.lines().enumerate() {
+        writeln!(ctx.output, "{} {}", n+1, line)?;
+    }
     Ok(())
 }
 
@@ -62,7 +64,7 @@ mod tests {
         list(&mut ed, &mut ctx).unwrap();
 
         let output = buf.into_inner().unwrap();
-        assert_eq!(output, b"the content\n");
+        assert_eq!(output, b"1 the content\n");
     }
 
     #[test]
