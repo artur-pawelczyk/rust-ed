@@ -21,6 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut cmd_map = CommandMap::default();
     cmd_map.bind("a", "append", cmds::append);
+    cmd_map.bind("c", "change", cmds::change_line);
     cmd_map.bind("l", "list", cmds::list);
     cmd_map.bind("p", "print-line", cmds::print_line);
     cmd_map.bind("q", "quit", cmds::quit);
