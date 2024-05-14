@@ -1,10 +1,12 @@
-mod editor;
+mod buffer;
 mod commands;
+mod editor;
 mod map;
 
 use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
 
-use editor::{Buffer, Editor, EditorMode};
+use buffer::Buffer;
+use editor::{Editor, EditorMode};
 use commands as cmds;
 use map::CommandMap;
 
@@ -12,12 +14,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let buffer = if let Some(path) = std::env::args().skip(1).next() {
         let mut contents = String::new();
         File::open(path)?.read_to_string(&mut contents)?;
-        Buffer { contents }
+        Buffer::with_contents(&contents)
     } else {
-        Buffer { contents: String::new() }
+        Buffer::default()
     };
 
-    let mut editor = Editor { buffer, mode: EditorMode::Command, line: 1 };
+    let mut editor = Editor { buffer, mode: EditorMode::Command };
 
     let mut cmd_map = CommandMap::default();
     cmd_map.bind("a", "append", cmds::append);

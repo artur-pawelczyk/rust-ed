@@ -8,7 +8,7 @@ pub fn list(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandErro
 }
 
 pub fn print_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
-    if let Some(line) = ed.buffer.contents.lines().nth(ed.line - 1) {
+    if let Some(line) = ed.buffer.contents.lines().nth(ed.buffer.line - 1) {
         writeln!(ctx.output, "{}", line)?;
         Ok(())
     } else {
@@ -18,7 +18,7 @@ pub fn print_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), Comma
 
 pub fn append(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
     let text = ctx.input.read().map_err(|_| CommandError::Read)?;
-    let target_line = ctx.destination.shift(ed.line);
+    let target_line = ctx.destination.shift(ed.buffer.line);
     let start = ed.buffer.contents.char_indices()
         .filter(|(_, c)| *c == '\n')
         .map(|(i, _)| i + 1)
@@ -26,13 +26,13 @@ pub fn append(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandEr
         .next()
         .unwrap_or(0);
     ed.buffer.contents.insert_str(start, &text);
-    ed.line = text.lines().count() + ed.line;
+    ed.buffer.line = text.lines().count() + ed.buffer.line;
     Ok(())
 }
 
 pub fn change_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
     let text = ctx.input.read().map_err(|_| CommandError::Read)?;
-    let target_line = ctx.destination.shift(ed.line);
+    let target_line = ctx.destination.shift(ed.buffer.line);
     let mut lines = ed.buffer.contents.char_indices().filter(|(_, c)| *c == '\n').skip(target_line - 2);
     let start = lines.next().map(|(i, _)| i).ok_or(CommandError::Generic)? + 1;
     let end = lines.next().map(|(i, _)| i).unwrap_or(ed.buffer.contents.len());
@@ -41,7 +41,7 @@ pub fn change_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), Comm
 }
 
 pub fn goto_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
-    ed.line = ctx.destination.shift(ed.line);
+    ed.buffer.line = ctx.destination.shift(ed.buffer.line);
     Ok(())
 }
 
@@ -82,7 +82,7 @@ mod tests {
         let mut ctx = CommandContext::with_output(&mut buf);
 
         ed.buffer.contents.push_str("first line\nsecond line");
-        ed.line = 2;
+        ed.buffer.line = 2;
         print_line(&mut ed, &mut ctx).unwrap();
 
         let output = buf.into_inner().unwrap();
@@ -96,15 +96,15 @@ mod tests {
 
         let mut ctx = CommandContext::with_output(&mut out).line(100);
         goto_line(&mut ed, &mut ctx).unwrap();
-        assert_eq!(ed.line, 100);
+        assert_eq!(ed.buffer.line, 100);
 
         let mut ctx = CommandContext::with_output(&mut out).line_relative(5);
         goto_line(&mut ed, &mut ctx).unwrap();
-        assert_eq!(ed.line, 105);
+        assert_eq!(ed.buffer.line, 105);
 
         let mut ctx = CommandContext::with_output(&mut out).line_relative(-200);
         goto_line(&mut ed, &mut ctx).unwrap();
-        assert_eq!(ed.line, 1);
+        assert_eq!(ed.buffer.line, 1);
     }
 
     #[test]
@@ -118,14 +118,14 @@ mod tests {
         append(&mut ed, &mut ctx).unwrap();
 
         assert_eq!(ed.buffer.contents, "first\nend\n");
-        assert_eq!(ed.line, 2);
+        assert_eq!(ed.buffer.line, 2);
 
-        ed.line = 1;
+        ed.buffer.line = 1;
         ctx.input = &ConstInput("middle\n");
         append(&mut ed, &mut ctx).unwrap();
 
         assert_eq!(ed.buffer.contents, "first\nmiddle\nend\n");
-        assert_eq!(ed.line, 2);
+        assert_eq!(ed.buffer.line, 2);
     }
 
     #[test]

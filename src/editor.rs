@@ -1,24 +1,11 @@
 use std::{error::Error, fmt::Display, io::Write, str::FromStr};
 
+use crate::buffer::Buffer;
+
+#[derive(Default)]
 pub struct Editor {
     pub buffer: Buffer,
     pub mode: EditorMode,
-    pub line: usize,
-}
-
-impl Default for Editor {
-    fn default() -> Self {
-        Self {
-            buffer: Default::default(),
-            mode: Default::default(),
-            line: 1
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct Buffer {
-    pub contents: String,
 }
 
 #[derive(Default, PartialEq)]
