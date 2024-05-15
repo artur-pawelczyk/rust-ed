@@ -22,11 +22,11 @@ impl Buffer {
         }
     }
 
-    pub fn current_line(&self) -> Line {
+    pub fn current_line(&mut self) -> Line {
         self.line_at(self.line)
     }
 
-    pub fn line_at(&self, line: usize) -> Line {
+    pub fn line_at(&mut self, line: usize) -> Line {
         if line > 1 {
             let mut lines = self.contents
                 .char_indices()
@@ -35,9 +35,9 @@ impl Buffer {
                 .skip(line - 2);
 
             Line {
-                buf: &self.contents,
                 start: lines.next().unwrap() + 1,
-                end: lines.next().unwrap_or(self.contents.len())
+                end: lines.next().unwrap_or(self.contents.len()),
+                buf: &mut self.contents,
             }
         } else {
             let end = self.contents.char_indices()
@@ -46,7 +46,7 @@ impl Buffer {
                 .unwrap_or(self.contents.len());
 
             Line {
-                buf: &self.contents,
+                buf: &mut self.contents,
                 start: 0,
                 end
             }
@@ -56,7 +56,7 @@ impl Buffer {
 
 #[derive(Debug)]
 pub struct Line<'a> {
-    buf: &'a str,
+    buf: &'a mut String,
     start: usize,
     end: usize,
 }
@@ -70,7 +70,8 @@ impl<'a> Line<'a> {
         &self.buf[self.start..self.end]
     }
 
-    pub fn set(&self, s: &str) {
+    pub fn set(&mut self, s: &str) {
+        self.buf.replace_range(self.start..self.end, s);
     }
 }
 
@@ -105,13 +106,12 @@ mod tests {
 
     #[test]
     fn test_line_at() {
-        let buf = Buffer::with_contents("first\nsecond\nthird\n");
+        let mut buf = Buffer::with_contents("first\nsecond\nthird\n");
 
         assert_eq!(buf.line_at(3).pos(), 3);
         assert_eq!(buf.current_line().pos(), 1);
     }
 
-    #[ignore]
     #[test]
     fn test_change_line() {
         let mut buf = Buffer::with_contents("first\nsecond\nthird\n");
@@ -119,5 +119,6 @@ mod tests {
         buf.current_line().set("changed");
 
         assert_eq!(buf.contents, "changed\nsecond\nthird\n");
+        assert_eq!(buf.current_line().text(), "changed");
     }
 }
