@@ -52,6 +52,25 @@ impl Buffer {
             }
         }
     }
+
+    pub fn beginning_of_line(&self, n: usize) -> Point {
+        if n > 1 {
+            dbg!(self.contents.char_indices().filter(|(_, c)| *c == '\n').collect::<Vec<_>>());
+            self.contents
+                .char_indices()
+                .filter(|(_, c)| *c == '\n')
+                .map(|(n, _)| n)
+                .nth(n - 2)
+                .map(|n| Point(n + 1))
+                .unwrap_or(Point(0))
+        } else {
+            Point(0)
+        }
+    }
+
+    pub fn insert(&mut self, p: &Point, s: &str) {
+        self.contents.insert_str(p.0, s);
+    }
 }
 
 #[derive(Debug)]
@@ -84,6 +103,9 @@ impl fmt::Display for Line<'_> {
         )
     }
 }
+
+#[derive(Debug)]
+struct Point(usize);
 
 #[cfg(test)]
 mod tests {
@@ -120,5 +142,16 @@ mod tests {
 
         assert_eq!(buf.contents, "changed\nsecond\nthird\n");
         assert_eq!(buf.current_line().text(), "changed");
+    }
+
+    #[test]
+    fn test_insert_at_point() {
+        let mut buf = Buffer::with_contents("first\nthird\n");
+
+        let p = buf.beginning_of_line(2);
+        dbg!(&p);
+        buf.insert(&p, "second\n");
+
+        assert_eq!(buf.contents, "first\nsecond\nthird\n");
     }
 }
