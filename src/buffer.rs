@@ -1,5 +1,3 @@
-use std::fmt;
-
 pub struct Buffer {
     pub contents: String,
     pub line: usize,
@@ -22,11 +20,11 @@ impl Buffer {
         }
     }
 
-    pub fn current_line(&mut self) -> Line {
+    pub fn current_line(&self) -> Region {
         self.line_at(self.line)
     }
 
-    pub fn line_at(&mut self, line: usize) -> Line {
+    pub fn line_at(&self, line: usize) -> Region {
         if line > 1 {
             let mut lines = self.contents
                 .char_indices()
@@ -34,22 +32,16 @@ impl Buffer {
                 .map(|(n, _)| n)
                 .skip(line - 2);
 
-            Line {
-                start: lines.next().unwrap() + 1,
-                end: lines.next().unwrap_or(self.contents.len()),
-                buf: &mut self.contents,
-            }
+            let start = lines.next().unwrap() + 1;
+            let end = lines.next().unwrap_or(self.contents.len());
+            Region(start, end)
         } else {
             let end = self.contents.char_indices()
                 .find(|(_, c)| *c == '\n')
                 .map(|(n, _)| n)
                 .unwrap_or(self.contents.len());
 
-            Line {
-                buf: &mut self.contents,
-                start: 0,
-                end
-            }
+            Region(0, end)
         }
     }
 
@@ -81,42 +73,28 @@ impl Buffer {
         self.contents[..p.0].lines().count() + 1
     }
 
+    pub fn region_line_number(&self, Region(start, _): &Region) -> usize {
+        self.contents[..*start].lines().count() + 1
+    }
+
+    pub fn region_text(&self, r: &Region) -> &str {
+        let Region(start, end) = r;
+        &self.contents[*start..*end]
+    }
+
     pub fn insert(&mut self, p: Point, s: &str) -> Point {
         self.contents.insert_str(p.0, s);
         Point(p.0 + s.len())
     }
+
+    pub fn replace(&mut self, Region(start, end): Region, s: &str) -> Region {
+        self.contents.replace_range(start..end, s);
+        Region(start, s.len())
+    }
 }
 
 #[derive(Debug)]
-pub struct Line<'a> {
-    buf: &'a mut String,
-    start: usize,
-    end: usize,
-}
-
-impl<'a> Line<'a> {
-    pub fn pos(&self) -> usize {
-        self.buf[0..self.start].lines().count() + 1
-    }
-
-    pub fn text(&self) -> &str {
-        &self.buf[self.start..self.end]
-    }
-
-    pub fn set(&mut self, s: &str) {
-        self.buf.replace_range(self.start..self.end, s);
-    }
-}
-
-impl fmt::Display for Line<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}[{}]{}",
-               &self.buf[..self.start],
-               &self.buf[self.start..self.end],
-               &self.buf[self.end..]
-        )
-    }
-}
+pub struct Region(usize, usize);
 
 #[derive(Debug)]
 pub struct Point(usize);
@@ -130,32 +108,23 @@ mod tests {
         let mut buf = Buffer::with_contents("first\nsecond\n");
 
         let l = buf.current_line();
-        dbg!(&l);
-        assert_eq!(l.pos(), 1);
-        assert_eq!(l.text(), "first");
+        assert_eq!(buf.region_line_number(&l), 1);
+        assert_eq!(buf.region_text(&l), "first");
 
         buf.line = 2;
         let l = buf.current_line();
-        assert_eq!(l.pos(), 2);
-        assert_eq!(l.text(), "second");
-    }
-
-    #[test]
-    fn test_line_at() {
-        let mut buf = Buffer::with_contents("first\nsecond\nthird\n");
-
-        assert_eq!(buf.line_at(3).pos(), 3);
-        assert_eq!(buf.current_line().pos(), 1);
+        assert_eq!(buf.region_line_number(&l), 2);
+        assert_eq!(buf.region_text(&l), "second");
     }
 
     #[test]
     fn test_change_line() {
         let mut buf = Buffer::with_contents("first\nsecond\nthird\n");
 
-        buf.current_line().set("changed");
+        let r = buf.replace(buf.current_line(), "changed");
 
         assert_eq!(buf.contents, "changed\nsecond\nthird\n");
-        assert_eq!(buf.current_line().text(), "changed");
+        assert_eq!(buf.region_text(&r), "changed");
     }
 
     #[test]

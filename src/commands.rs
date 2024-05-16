@@ -19,14 +19,9 @@ pub fn print_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), Comma
 pub fn append(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
     let text = ctx.input.read().map_err(|_| CommandError::Read)?;
     let target_line = ctx.destination.shift(ed.buffer.line);
-    let start = ed.buffer.contents.char_indices()
-        .filter(|(_, c)| *c == '\n')
-        .map(|(i, _)| i + 1)
-        .skip(target_line - 1)
-        .next()
-        .unwrap_or(0);
-    ed.buffer.contents.insert_str(start, &text);
-    ed.buffer.line = text.lines().count() + ed.buffer.line;
+    let p = ed.buffer.end_of_line(target_line);
+    let p = ed.buffer.insert(p, &text);
+    ed.buffer.line = ed.buffer.line_at_point(&p);
     Ok(())
 }
 
@@ -118,14 +113,14 @@ mod tests {
         append(&mut ed, &mut ctx).unwrap();
 
         assert_eq!(ed.buffer.contents, "first\nend\n");
-        assert_eq!(ed.buffer.line, 2);
+        assert_eq!(ed.buffer.line, 3);
 
         ed.buffer.line = 1;
         ctx.input = &ConstInput("middle\n");
         append(&mut ed, &mut ctx).unwrap();
 
         assert_eq!(ed.buffer.contents, "first\nmiddle\nend\n");
-        assert_eq!(ed.buffer.line, 2);
+        assert_eq!(ed.buffer.line, 3);
     }
 
     #[test]
