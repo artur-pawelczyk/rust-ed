@@ -55,7 +55,6 @@ impl Buffer {
 
     pub fn beginning_of_line(&self, n: usize) -> Point {
         if n > 1 {
-            dbg!(self.contents.char_indices().filter(|(_, c)| *c == '\n').collect::<Vec<_>>());
             self.contents
                 .char_indices()
                 .filter(|(_, c)| *c == '\n')
@@ -68,8 +67,23 @@ impl Buffer {
         }
     }
 
-    pub fn insert(&mut self, p: &Point, s: &str) {
+    pub fn end_of_line(&self, n: usize) -> Point {
+        self.contents
+            .char_indices()
+            .filter(|(_, c)| *c == '\n')
+            .map(|(n, _)| n)
+            .nth(n - 1)
+            .map(|n| Point(n + 1))
+            .unwrap_or(Point(0))
+    }
+
+    pub fn line_at_point(&self, p: &Point) -> usize {
+        self.contents[..p.0].lines().count() + 1
+    }
+
+    pub fn insert(&mut self, p: Point, s: &str) -> Point {
         self.contents.insert_str(p.0, s);
+        Point(p.0 + s.len())
     }
 }
 
@@ -105,7 +119,7 @@ impl fmt::Display for Line<'_> {
 }
 
 #[derive(Debug)]
-struct Point(usize);
+pub struct Point(usize);
 
 #[cfg(test)]
 mod tests {
@@ -149,9 +163,20 @@ mod tests {
         let mut buf = Buffer::with_contents("first\nthird\n");
 
         let p = buf.beginning_of_line(2);
-        dbg!(&p);
-        buf.insert(&p, "second\n");
-
+        let p = buf.insert(p, "second\n");
         assert_eq!(buf.contents, "first\nsecond\nthird\n");
+        assert_eq!(p.0, 13);
+
+        let p = buf.end_of_line(2);
+        buf.insert(p, "more\n");
+        assert_eq!(buf.contents, "first\nsecond\nmore\nthird\n");
+    }
+
+    #[test]
+    fn test_line_at_point() {
+        let buf = Buffer::with_contents("one\ntwo\nthree\nfour\n");
+
+        let p = buf.beginning_of_line(2);
+        assert_eq!(buf.line_at_point(&p), 2);
     }
 }
