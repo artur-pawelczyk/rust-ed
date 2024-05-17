@@ -28,10 +28,8 @@ pub fn append(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandEr
 pub fn change_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
     let text = ctx.input.read().map_err(|_| CommandError::Read)?;
     let target_line = ctx.destination.shift(ed.buffer.line);
-    let mut lines = ed.buffer.contents.char_indices().filter(|(_, c)| *c == '\n').skip(target_line - 2);
-    let start = lines.next().map(|(i, _)| i).ok_or(CommandError::Generic)? + 1;
-    let end = lines.next().map(|(i, _)| i).unwrap_or(ed.buffer.contents.len());
-    ed.buffer.contents.replace_range(start..end, text.trim_end());
+    let r = ed.buffer.replace(ed.buffer.line_at(target_line), text.trim_end());
+    ed.buffer.line = ed.buffer.region_line_number(&r);
     Ok(())
 }
 
