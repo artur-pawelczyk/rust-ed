@@ -8,6 +8,12 @@ pub struct Editor {
     pub mode: EditorMode,
 }
 
+impl Editor {
+    pub fn kill(&mut self) {
+        self.mode = EditorMode::Quit;
+    }
+}
+
 #[derive(Default, PartialEq)]
 pub enum EditorMode {
     #[default] Command, Quit

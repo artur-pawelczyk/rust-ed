@@ -39,7 +39,7 @@ pub fn goto_line(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), Comman
 }
 
 pub fn quit(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
-    ed.mode = EditorMode::Quit;
+    ed.kill();
     Ok(())
 }
 
