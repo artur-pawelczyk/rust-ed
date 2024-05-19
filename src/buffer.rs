@@ -32,8 +32,9 @@ impl Buffer {
                 .map(|(n, _)| n)
                 .skip(line - 2);
 
-            let start = lines.next().unwrap() + 1;
+            let start = lines.next().map(|n| n + 1);
             let end = lines.next().unwrap_or(self.contents.len());
+            let start = start.or_else(|| self.contents[..end-1].rfind('\n')).unwrap_or(0);
             Region(start, end)
         } else {
             let end = self.contents.char_indices()
@@ -147,5 +148,16 @@ mod tests {
 
         let p = buf.beginning_of_line(2);
         assert_eq!(buf.line_at_point(&p), 2);
+    }
+
+    #[test]
+    fn test_line_out_of_bounds() {
+        let buf = Buffer::with_contents("one\ntwo\nthree\n");
+
+        let p = buf.line_at(100);
+        assert_eq!(buf.region_line_number(&p), 3);
+
+        let p = buf.line_at(0);
+        assert_eq!(buf.region_line_number(&p), 1);
     }
 }
