@@ -1,8 +1,8 @@
 use crate::editor::{CommandContext, CommandError, Editor, EditorMode};
 
 pub fn list(ed: &mut Editor, ctx: &mut CommandContext) -> Result<(), CommandError> {
-    for (n, line) in ed.buffer.contents.lines().enumerate() {
-        writeln!(ctx.output, "{} {}", n+1, line)?;
+    for (n, line) in ed.buffer.lines() {
+        writeln!(ctx.output, "{} {}", n, line)?;
     }
     Ok(())
 }

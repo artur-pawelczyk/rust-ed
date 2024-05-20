@@ -92,6 +92,10 @@ impl Buffer {
         self.contents.replace_range(start..end, s);
         Region(start, s.len())
     }
+
+    pub fn lines(&self) -> impl Iterator<Item = (usize, &str)> {
+        self.contents.lines().enumerate().map(|(n, s)| (n+1, s))
+    }
 }
 
 #[derive(Debug)]
@@ -159,5 +163,14 @@ mod tests {
 
         let p = buf.line_at(0);
         assert_eq!(buf.region_line_number(&p), 1);
+    }
+
+    #[test]
+    fn test_line_iter() {
+        let buf = Buffer::with_contents("one\ntwo\n");
+
+        let v = buf.lines().collect::<Vec<_>>();
+        assert_eq!(v[0], (1, "one"));
+        assert_eq!(v[1], (2, "two"));
     }
 }
