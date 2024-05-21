@@ -47,6 +47,16 @@ pub fn noop(_: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> 
     Ok(())
 }
 
+pub fn display(ed: &mut Editor, _: &mut CommandContext) -> Result<(), CommandError> {
+    if ed.mode == EditorMode::Visual {
+        ed.mode = EditorMode::Command;
+    } else {
+        ed.mode = EditorMode::Visual;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::io::BufWriter;

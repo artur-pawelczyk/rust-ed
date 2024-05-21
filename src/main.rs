@@ -3,10 +3,11 @@ mod commands;
 mod editor;
 mod map;
 
-use std::{error::Error, fmt::Display, fs::File, io::{Read, Write}};
+use std::{error::Error, fmt::Display, fs::File, io::{self, Read, Write}};
 
 use buffer::Buffer;
-use editor::{Editor, EditorMode};
+use crossterm::{cursor, style, terminal, tty::IsTty, ExecutableCommand as _};
+use editor::{CommandError, Editor, EditorMode};
 use commands as cmds;
 use map::CommandMap;
 
@@ -27,6 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     cmd_map.bind("l", "list", cmds::list);
     cmd_map.bind("p", "print-line", cmds::print_line);
     cmd_map.bind("q", "quit", cmds::quit);
+    cmd_map.bind("d", "display", cmds::display);
     cmd_map.bind_number("goto-line", cmds::goto_line);
 
     while editor.mode != EditorMode::Quit {
@@ -45,6 +47,41 @@ fn run_cycle(editor: &mut Editor, cmd_map: &CommandMap) -> Result<(), Box<dyn Er
             let cmd = cmd_map.lookup(&cmd_str).ok_or(CommandParseError::CommandNotFound)?;
 
             cmd.run(editor)?;
+            Ok(())
+        },
+        EditorMode::Visual => {
+            if !io::stdout().is_tty() {
+                return Err(Box::new(CommandError::NotTty));
+            }
+
+            let (_, size_y) = terminal::size().unwrap();
+            let lines_n: usize = (size_y - 2).into();
+            io::stdout()
+                .execute(terminal::Clear(terminal::ClearType::All)).unwrap()
+                .execute(cursor::MoveTo(0, 0)).unwrap();
+
+            for (n, line) in editor.buffer.lines_around(editor.buffer.line, lines_n) {
+                if n == editor.buffer.line {
+                    io::stdout().execute(style::SetAttribute(style::Attribute::Bold)).unwrap();
+                }
+
+                io::stdout()
+                    .execute(style::Print(n)).unwrap()
+                    .execute(style::Print(' ')).unwrap()
+                    .execute(style::Print(line)).unwrap()
+                    .execute(style::SetAttribute(style::Attribute::Reset)).unwrap()
+                    .execute(style::Print('\n')).unwrap();
+            }
+
+            io::stdout()
+                .execute(cursor::MoveTo(0, size_y)).unwrap()
+                .execute(terminal::Clear(terminal::ClearType::CurrentLine)).unwrap();
+
+            let cmd_str = read_command()?;
+            let cmd = cmd_map.lookup(&cmd_str).ok_or(CommandParseError::CommandNotFound)?;
+
+            cmd.run(editor)?;
+
             Ok(())
         },
         EditorMode::Quit => { return Ok(()); },

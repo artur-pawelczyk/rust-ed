@@ -96,6 +96,21 @@ impl Buffer {
     pub fn lines(&self) -> impl Iterator<Item = (usize, &str)> {
         self.contents.lines().enumerate().map(|(n, s)| (n+1, s))
     }
+
+    pub fn lines_around(&self, l: usize, n: usize) -> impl Iterator<Item = (usize, &str)> {
+        let (lines_before, lines_after) = split_integer(n);
+        self.lines()
+            .skip(if lines_before > l { 0 } else { l - lines_before - 1 })
+            .take(lines_before + lines_after)
+    }
+}
+
+fn split_integer(n: usize) -> (usize, usize) {
+    if n % 2 == 0 {
+        (n/2, n/2)
+    } else {
+        (n/2, n/2 + 1)
+    }
 }
 
 #[derive(Debug)]
@@ -172,5 +187,19 @@ mod tests {
         let v = buf.lines().collect::<Vec<_>>();
         assert_eq!(v[0], (1, "one"));
         assert_eq!(v[1], (2, "two"));
+    }
+
+    #[test]
+    fn test_lines_around() {
+        let text: String = (1..=20).map(|i| format!("{i}\n")).collect();
+        let buf = Buffer::with_contents(&text);
+
+        assert_eq!(buf.lines_around(5, 100).count(), 20);
+        assert_eq!(collect_lines(buf.lines_around(5, 1)), vec!["5"]);
+        assert_eq!(collect_lines(buf.lines_around(10, 4)), vec!["8", "9", "10", "11"]);
+    }
+
+    fn collect_lines<'a>(i: impl Iterator<Item = (usize, &'a str)>) -> Vec<&'a str> {
+        i.map(|(_, s)| s).collect()
     }
 }

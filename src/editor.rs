@@ -16,7 +16,10 @@ impl Editor {
 
 #[derive(Default, PartialEq)]
 pub enum EditorMode {
-    #[default] Command, Quit
+    #[default]
+    Command,
+    Quit,
+    Visual,
 }
 
 pub struct CommandContext<'a> {
@@ -150,6 +153,7 @@ pub enum CommandError {
     IOError(std::io::Error),
     Generic,
     Read,
+    NotTty,
 }
 
 impl Error for CommandError {
