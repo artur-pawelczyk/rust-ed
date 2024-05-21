@@ -12,7 +12,7 @@ use commands as cmds;
 use map::CommandMap;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let buffer = if let Some(path) = std::env::args().skip(1).next() {
+    let buffer = if let Some(path) = std::env::args().nth(1) {
         let mut contents = String::new();
         File::open(path)?.read_to_string(&mut contents)?;
         Buffer::with_contents(&contents)
@@ -84,7 +84,7 @@ fn run_cycle(editor: &mut Editor, cmd_map: &CommandMap) -> Result<(), Box<dyn Er
 
             Ok(())
         },
-        EditorMode::Quit => { return Ok(()); },
+        EditorMode::Quit => Ok(()),
     }
 }
 

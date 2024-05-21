@@ -117,7 +117,7 @@ impl FromStr for LineOffset {
                 Ok(Self::Relative(1))
             } else {
                 s[1..].parse::<isize>()
-                    .map(|i| Self::Relative(i))
+                    .map(Self::Relative)
                     .map_err(|_| ())
             }
         } else if first == "-" {
@@ -130,7 +130,7 @@ impl FromStr for LineOffset {
             }
         } else {
             s.parse::<usize>()
-                .map(|i| Self::Absolute(i))
+                .map(Self::Absolute)
                 .map_err(|_| ())
         }
     }
