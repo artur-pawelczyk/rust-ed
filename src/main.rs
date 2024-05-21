@@ -54,28 +54,28 @@ fn run_cycle(editor: &mut Editor, cmd_map: &CommandMap) -> Result<(), Box<dyn Er
                 return Err(Box::new(CommandError::NotTty));
             }
 
-            let (_, size_y) = terminal::size().unwrap();
+            let (_, size_y) = terminal::size()?;
             let lines_n: usize = (size_y - 2).into();
             io::stdout()
-                .execute(terminal::Clear(terminal::ClearType::All)).unwrap()
-                .execute(cursor::MoveTo(0, 0)).unwrap();
+                .execute(terminal::Clear(terminal::ClearType::All))?
+                .execute(cursor::MoveTo(0, 0))?;
 
             for (n, line) in editor.buffer.lines_around(editor.buffer.line, lines_n) {
                 if n == editor.buffer.line {
-                    io::stdout().execute(style::SetAttribute(style::Attribute::Bold)).unwrap();
+                    io::stdout().execute(style::SetAttribute(style::Attribute::Bold))?;
                 }
 
                 io::stdout()
-                    .execute(style::Print(n)).unwrap()
-                    .execute(style::Print(' ')).unwrap()
-                    .execute(style::Print(line)).unwrap()
-                    .execute(style::SetAttribute(style::Attribute::Reset)).unwrap()
-                    .execute(style::Print('\n')).unwrap();
+                    .execute(style::Print(n))?
+                    .execute(style::Print(' '))?
+                    .execute(style::Print(line))?
+                    .execute(style::SetAttribute(style::Attribute::Reset))?
+                    .execute(style::Print('\n'))?;
             }
 
             io::stdout()
-                .execute(cursor::MoveTo(0, size_y)).unwrap()
-                .execute(terminal::Clear(terminal::ClearType::CurrentLine)).unwrap();
+                .execute(cursor::MoveTo(0, size_y))?
+                .execute(terminal::Clear(terminal::ClearType::CurrentLine))?;
 
             let cmd_str = read_command()?;
             let cmd = cmd_map.lookup(&cmd_str).ok_or(CommandParseError::CommandNotFound)?;
